@@ -2,14 +2,21 @@ from __future__ import print_function
 #!/usr/bin/env python
 
 # OS related imports
-from os import remove
-from shutil import rmtree
+import os
+import shutil
 
 # Script related templates
 from jinja2 import Environment
 
+TEMPLATE_FILES = ['inventory', 'servers.yml']
+ANSIBLE_FILES = ['ansible.cfg', 'ssh.config']
+VAGRANT_FILES = ['Vagrantfile']
+FILES = ANSIBLE_FILES + VAGRANT_FILES + TEMPLATE_FILES
+
+FOLDERS = ['.vagrant']
+
 # Delete files if they are already deployed
-def clean_jhub_environment():
+def delete_conf(pwd):
     """
     Clean the work environment by making sure that:
         - No `Vagrant` file is present
@@ -17,25 +24,40 @@ def clean_jhub_environment():
         - No `.vagrant` folder is present
         - No `inventory` file is present.
     """
-    files = ['Vagrant', 'ansible.cfg', 'ssh.config']
-    folders = ['.vagrant', 'inventory']
+    files = FILES
+    folders = FOLDERS
 
-    def delete(f, func=remove):
+    def delete(f, func=os.remove):
         """
-        Funcion to dlete files or folders
+        Funcion to delete files or folders in `pwd`
         """
         try:
             func(f)
         except OSError as e:
-            print("File " + f + ": " + e.strerror)
+            print("DELETE: " + f + ", " + e.strerror)
 
     for f in files:
-        delete(f, func=remove)
+        delete(os.path.join(pwd, f), func=os.remove)
 
     for f in folders:
-        delete(f, func=rmtree)
+        delete(os.path.join(pwd, f), func=shutil.rmtree)
 
+def copy_conf(pwd):
+    """
+    Place configuration files to manage Ansible ssh conections.
+    """
+    orig = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static_files')
+    files = ANSIBLE_FILES + VAGRANT_FILES
 
+    def copy(f, orig, dest):
+        try:
+            shutil.copy(os.path.join(orig, f), \
+                        os.path.join(dest, f))
+        except FileNotFoundError as e:
+            print("COPY: " + f + ", " + e.strerror)
+
+    for f in files:
+        copy(f, orig, pwd)
 
 # Copy:
 #   - Vagrant
@@ -48,9 +70,15 @@ def clean_jhub_environment():
 
 # Copy Jinja2 templates
 
-def main():
-    clean_jhub_environment()
 
+
+def main():
+    pwd = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
+    delete_conf(pwd)
+    copy_conf(pwd)
+
+
+PWD=os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == '__main__':
     main()
