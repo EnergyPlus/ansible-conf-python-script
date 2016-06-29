@@ -1,26 +1,73 @@
 {
-  "inventory": {
+  "inventory":
+  {
     "title": "Server Inventory to be used with local VM using Vagrant.",
-    "groups": [],
-    "servers": [
-      { "name": "jhub_nginx",
-        "IP": "172.12.9.51",
+
+    "groups":
+    [
+      {
+        "name": "CoreOS",
+        "vars":
+        {
+          "ansible_ssh_user": "core",
+          "ansible_python_interpreter": "'PATH=/home/core/bin:$PATH python'"
+        }
+      },
+      {
+        "name": "RHEL_and_derivates",
+        "vars":
+        {
+          "ansible_ssh_user": "vagrant"
+        }
+      }
+    ],
+
+    "servers":
+    [
+      {
+        "name": "nfs_server",
+        "IP": "172.12.9.61",
         "ssh_user": "vagrant",
         "OS": "CentOS",
         "VagrantBox": "centos/7",
         "ram": 512,
         "cpus": 1,
-        "ports": [
+        "ports":
+        [
           {
             "from": 8000,
-            "to": 8091,
+            "to": 8091
           }
         ],
-        "group_memberships":[
-          "RHEL_and_derivates",
+        "group_memberships":
+        [
+          "RHEL_and_derivates"
         ]
-
       },
+      {
+        "name": "jhub_nginx",
+        "IP": "172.12.9.52",
+        "ssh_user": "core",
+        "OS": "CoreOS",
+        "VagrantBox": "centos/7",
+        "ram": 512,
+        "cpus": 1,
+        "ports":
+        [
+          {
+            "from": 80,
+            "to": 8000
+          },
+          {
+            "from": 443,
+            "to": 8443
+          }
+        ],
+        "group_memberships":
+        [
+          "CoreOS"
+        ]
+      }
     ]
   }
 }
