@@ -1,12 +1,12 @@
-from __future__ import print_function
 #!/usr/bin/env python
+from __future__ import print_function
 
-# OS related imports
 import os
+import json
 import shutil
+import sys
 
-# Script related templates
-from jinja2 import Environment
+from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_FILES = ['inventory', 'servers.yml']
 ANSIBLE_FILES = ['ansible.cfg', 'ssh.config']
@@ -15,7 +15,6 @@ FILES = ANSIBLE_FILES + VAGRANT_FILES + TEMPLATE_FILES
 
 FOLDERS = ['.vagrant']
 
-# Delete files if they are already deployed
 def delete_conf(pwd):
     """
     Clean the work environment by making sure that:
@@ -51,34 +50,40 @@ def copy_conf(pwd):
 
     def copy(f, orig, dest):
         try:
-            shutil.copy(os.path.join(orig, f), \
-                        os.path.join(dest, f))
+            shutil.copy(os.path.join(orig, f), os.path.join(dest, f))
         except FileNotFoundError as e:
             print("COPY: " + f + ", " + e.strerror)
 
     for f in files:
         copy(f, orig, pwd)
 
-# Copy:
-#   - Vagrant
-#   - ansible.cfg
-#   - ssh.config
+def generate_templates(pwd):
+    PATH = os.path.dirname(os.path.realpath(__file__))
+    TEMPLATE = Environment(trim_blocks=True,
+                    keep_trailing_newline=True,
+                    lstrip_blocks=False,
+                    loader=FileSystemLoader(os.path.join(PATH, 'templates')))
 
-# Read dictionary with servers
+    def render_template(template_filename, context):
+        return TEMPLATE.get_template(template_filename).render(context)
 
-# Create Jinja2 tempates
+    def template(fname, context):
+        with open(fname, 'w') as f:
+            html = render_template(fname + '.j2', context)
+            f.write(html)
 
-# Copy Jinja2 templates
+    files = TEMPLATE_FILES
+    context = json.loads(open(os.path.join(PATH, 'vagrant_inventory.json')).read())
 
-
+    for f in files:
+        template(f, context)
 
 def main():
     pwd = os.path.split(os.path.dirname(os.path.realpath(__file__)))[0]
     delete_conf(pwd)
     copy_conf(pwd)
+    generate_templates(pwd)
 
-
-PWD=os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == '__main__':
     main()
